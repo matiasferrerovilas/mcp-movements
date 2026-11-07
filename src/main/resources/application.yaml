@@ -1,3 +1,15 @@
+server:
+  port: ${PORT:8083}
+  forward-headers-strategy: framework
+
 spring:
   application:
-    name: mcp
+    name: mcp-movements
+  ai:
+    mcp:
+      server:
+        name: movements
+        version: 0.0.1
+        type: SYNC
+        protocol: STREAMABLE
+        instructions: Read-only access to the authenticated user's financial movements (expenses, income, refunds).

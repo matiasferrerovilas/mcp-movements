@@ -1,0 +1,13 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KC_URL_REALM:http://192.168.1.33:8080/realms/m2}
+
+api-movements:
+  base-url: ${API_MOVEMENTS_URL:http://localhost:8081}
+
+logging:
+  level:
+    root: INFO
