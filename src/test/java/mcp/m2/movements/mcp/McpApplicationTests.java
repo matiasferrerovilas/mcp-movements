@@ -31,6 +31,8 @@ class McpApplicationTests {
 	static final AtomicReference<String> seenAuth = new AtomicReference<>();
 	static final AtomicReference<String> seenQuery = new AtomicReference<>();
 	static final AtomicReference<String> seenPath = new AtomicReference<>();
+	static final AtomicReference<String> seenMethod = new AtomicReference<>();
+	static final AtomicReference<String> seenBody = new AtomicReference<>();
 	static HttpServer api;
 
 	@DynamicPropertySource
@@ -40,7 +42,11 @@ class McpApplicationTests {
 			seenAuth.set(ex.getRequestHeaders().getFirst("Authorization"));
 			seenPath.set(ex.getRequestURI().getPath());
 			seenQuery.set(ex.getRequestURI().getRawQuery());
-			byte[] body = "{\"content\":[{\"id\":1,\"description\":\"coffee\"}]}".getBytes();
+			seenMethod.set(ex.getRequestMethod());
+			seenBody.set(new String(ex.getRequestBody().readAllBytes()));
+			byte[] body = (ex.getRequestURI().getPath().endsWith("/categories")
+					? "[{\"id\":2,\"description\":\"Hogar\"},{\"id\":6,\"description\":\"Servicios\"}]"
+					: "{\"content\":[{\"id\":1,\"description\":\"coffee\"}]}").getBytes();
 			ex.getResponseHeaders().add("Content-Type", "application/json");
 			ex.sendResponseHeaders(200, body.length);
 			ex.getResponseBody().write(body);
@@ -77,6 +83,65 @@ class McpApplicationTests {
 		return HttpClient.newHttpClient().send(b.build(), HttpResponse.BodyHandlers.ofString());
 	}
 
+	String openSession() throws Exception {
+		var init = post(null, "user-token", """
+				{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18",
+				"capabilities":{},"clientInfo":{"name":"t","version":"1"}}}""");
+		String session = init.headers().firstValue("Mcp-Session-Id").orElse(null);
+		post(session, "user-token", "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}");
+		return session;
+	}
+
+	@Test
+	void createsMovementWithIdempotencyKeyAndCanonicalCategory() throws Exception {
+		String session = openSession();
+		seenMethod.set(null);
+		seenBody.set(null);
+
+		var call = post(session, "user-token", """
+				{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"create_movement",
+				"arguments":{"amount":12.5,"date":"2026-11-06","description":"Mercadona","type":"DEBITO",
+				"currency":"EUR","categories":["hogar"],"bank":"SANTANDER RIO"}}}""");
+
+		assertEquals("POST", seenMethod.get(), call.body());
+		assertEquals("/v1/expenses", seenPath.get());
+		assertEquals("Bearer user-token", seenAuth.get());
+		var body = seenBody.get();
+		assertTrue(body.contains("\"amount\":12.5") && body.contains("\"date\":\"2026-11-06\"")
+				&& body.contains("\"type\":\"DEBITO\"") && body.contains("\"currency\":\"EUR\"")
+				&& body.contains("\"categories\":[{\"description\":\"Hogar\"}]")
+				&& body.matches(".*\"clientId\":\"[0-9a-f-]{36}\".*"), body);
+	}
+
+	@Test
+	void rejectsUnknownCategoryWithoutCreatingAnything() throws Exception {
+		String session = openSession();
+		seenMethod.set(null);
+
+		var call = post(session, "user-token", """
+				{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"create_movement",
+				"arguments":{"amount":5,"date":"2026-11-06","description":"X","type":"DEBITO",
+				"currency":"EUR","categories":["Inexistente"]}}}""");
+
+		assertTrue(call.body().contains("Unknown category") && call.body().contains("Hogar"), call.body());
+		assertEquals("GET", seenMethod.get());
+	}
+
+	@Test
+	void doesNotSendEmptyFilters() throws Exception {
+		String session = openSession();
+		seenPath.set(null);
+		seenQuery.set(null);
+		post(session, "user-token", """
+				{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"list_movements",
+				"arguments":{"type":[],"currency":[],"bank":[],"categories":[]}}}""");
+
+		assertEquals("/v1/expenses", seenPath.get());
+		var query = seenQuery.get();
+		assertTrue(query.contains("page=0") && !query.contains("type") && !query.contains("currency")
+				&& !query.contains("bank") && !query.contains("categories"), query);
+	}
+
 	@Test
 	void rejectsAnonymousAndPointsToMetadata() throws Exception {
 		var res = post(null, null, "{}");
@@ -92,6 +157,7 @@ class McpApplicationTests {
 		assertEquals(200, res.statusCode(), res.body());
 		assertTrue(res.body().contains("http://localhost/realm"), res.body());
 		assertTrue(res.body().contains("/mcp"), res.body());
+		assertTrue(res.body().contains("\"tls_client_certificate_bound_access_tokens\":false"), res.body());
 	}
 
 	@Test
@@ -116,7 +182,7 @@ class McpApplicationTests {
 		var list = post(session, "user-token", "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/list\"}");
 		for (String name : new String[] {"list_movements", "get_balance", "get_balance_by_category",
 				"get_monthly_evolution", "get_recovery_time", "list_workspaces", "get_workspace_monthly_summary",
-				"list_categories", "list_subscriptions", "list_budgets", "list_goals", "list_income"}) {
+				"list_categories", "list_subscriptions", "list_budgets", "list_goals", "list_income", "create_movement"}) {
 			assertTrue(list.body().contains("\"" + name + "\""), name);
 		}
 

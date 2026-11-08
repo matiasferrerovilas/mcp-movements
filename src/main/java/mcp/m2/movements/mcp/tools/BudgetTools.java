@@ -27,6 +27,6 @@ class BudgetTools {
 			@McpToolParam(description = "Year, e.g. 2026") int year,
 			@McpToolParam(description = "Month between 1 and 12") int month,
 			@McpToolParam(description = "Only budgets in this currency symbol, e.g. ARS; all currencies when omitted", required = false) String currency) {
-		return client.get("/v1/budgets", QueryParams.of("year", year, "month", month, "currency", currency));
+		return client.getBudgets(year, month, currency);
 	}
 }

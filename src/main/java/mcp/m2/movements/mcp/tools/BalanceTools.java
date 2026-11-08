@@ -29,7 +29,7 @@ class BalanceTools {
 			@McpToolParam(description = "Inclusive start date yyyy-MM-dd") String startDate,
 			@McpToolParam(description = "Inclusive end date yyyy-MM-dd") String endDate,
 			@McpToolParam(description = "Currency symbols to include, e.g. [\"ARS\"]") List<String> currencies) {
-		return client.get("/v1/balance", QueryParams.of("startDate", startDate, "endDate", endDate, "currencies", currencies));
+		return client.getBalance(startDate, endDate, currencies);
 	}
 
 	@McpTool(name = "get_balance_by_category",
@@ -45,7 +45,7 @@ class BalanceTools {
 	public Object getBalanceByCategory(
 			@McpToolParam(description = "Any date inside the month to analyze, yyyy-MM-dd; only its year and month are used") String startDate,
 			@McpToolParam(description = "Currency symbols to include, e.g. [\"ARS\"]") List<String> currencies) {
-		return client.get("/v1/balance/category", QueryParams.of("startDate", startDate, "currencies", currencies));
+		return client.getBalanceByCategory(startDate, currencies);
 	}
 
 	@McpTool(name = "get_monthly_evolution",
@@ -57,7 +57,7 @@ class BalanceTools {
 					destructiveHint = false, idempotentHint = true))
 	public Object getMonthlyEvolution(
 			@McpToolParam(description = "Year between 2000 and 2100") int year) {
-		return client.get("/v1/balance/monthly-evolution", QueryParams.of("year", year));
+		return client.getMonthlyEvolution(year);
 	}
 
 	@McpTool(name = "get_recovery_time",
@@ -73,6 +73,6 @@ class BalanceTools {
 			@McpToolParam(description = "Amount to recover, greater than 0, e.g. 150000") String amount,
 			@McpToolParam(description = "Currency symbol, e.g. ARS (case-insensitive)") String currency,
 			@McpToolParam(description = "Closed months of history to average, 1-24, default 3", required = false) Integer months) {
-		return client.get("/v1/balance/recovery-time", QueryParams.of("amount", amount, "currency", currency, "months", months));
+		return client.getRecoveryTime(amount, currency, months);
 	}
 }

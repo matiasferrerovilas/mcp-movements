@@ -23,7 +23,7 @@ class WorkspaceTools {
 			annotations = @McpTool.McpAnnotations(title = "List workspaces", readOnlyHint = true,
 					destructiveHint = false, idempotentHint = true))
 	public Object listWorkspaces() {
-		return client.get("/v1/workspace", QueryParams.of());
+		return client.getWorkspaces();
 	}
 
 	@McpTool(name = "get_workspace_monthly_summary",
@@ -41,8 +41,9 @@ class WorkspaceTools {
 			@McpToolParam(description = "Year between 2000 and 2100") int year,
 			@McpToolParam(description = "Month between 1 and 12") int month,
 			@McpToolParam(description = "true for the per-member breakdown, default false", required = false) Boolean byUser) {
-		var path = "/v1/workspaces/" + workspaceId + "/summary/monthly" + (Boolean.TRUE.equals(byUser) ? "/by-user" : "");
-		return client.get(path, QueryParams.of("year", year, "month", month));
+		return Boolean.TRUE.equals(byUser)
+				? client.getWorkspaceMonthlySummaryByUser(workspaceId, year, month)
+				: client.getWorkspaceMonthlySummary(workspaceId, year, month);
 	}
 
 	@McpTool(name = "list_categories",
@@ -52,6 +53,6 @@ class WorkspaceTools {
 			annotations = @McpTool.McpAnnotations(title = "List categories", readOnlyHint = true,
 					destructiveHint = false, idempotentHint = true))
 	public Object listCategories() {
-		return client.get("/v1/workspace/categories", QueryParams.of());
+		return client.getCategories();
 	}
 }

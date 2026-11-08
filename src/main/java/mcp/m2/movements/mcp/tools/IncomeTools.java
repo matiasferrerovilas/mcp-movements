@@ -24,8 +24,8 @@ class IncomeTools {
 	public Object listIncome(
 			@McpToolParam(description = "Zero-based page index, default 0", required = false) Integer page,
 			@McpToolParam(description = "Page size, default 20, max 100", required = false) Integer size) {
-		return client.get("/v1/income", QueryParams.of(
-				"page", page == null ? 0 : Math.max(page, 0),
-				"size", size == null ? 20 : Math.clamp(size, 1, 100)));
+		return client.getIncome(
+				page == null ? 0 : Math.max(page, 0),
+				size == null ? 20 : Math.clamp(size, 1, 100));
 	}
 }

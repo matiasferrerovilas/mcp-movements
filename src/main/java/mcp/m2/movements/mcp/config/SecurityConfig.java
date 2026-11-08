@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -18,8 +19,10 @@ class SecurityConfig {
 				.oauth2ResourceServer(o -> o
 						.jwt(Customizer.withDefaults())
 						.protectedResourceMetadata(m -> m
-								.protectedResourceMetadataCustomizer(b -> b.authorizationServer(issuer))))
-				.csrf(c -> c.disable())
+								.protectedResourceMetadataCustomizer(b -> b
+										.authorizationServer(issuer)
+										.tlsClientCertificateBoundAccessTokens(false))))
+				.csrf(AbstractHttpConfigurer::disable)
 				.build();
 	}
 }

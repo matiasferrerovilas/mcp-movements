@@ -22,6 +22,6 @@ class GoalTools {
 					destructiveHint = false, idempotentHint = true))
 	public Object listGoals(
 			@McpToolParam(description = "workspaceId from list_workspaces; unlike other tools it does not default to the user's default workspace") long workspaceId) {
-		return client.get("/v1/goals", QueryParams.of("workspaceId", workspaceId));
+		return client.getGoals(workspaceId);
 	}
 }

@@ -12,4 +12,9 @@ spring:
         version: 0.0.1
         type: SYNC
         protocol: STREAMABLE
-        instructions: Read-only access to the authenticated user's financial movements (expenses, income, refunds).
+        capabilities:
+          tool: true
+          resource: false
+          prompt: false
+          completion: false
+        instructions: Access to the authenticated user's financial movements (expenses, income, refunds). Every tool only reads data, except create_movement which writes one movement and must be confirmed with the user first.

@@ -31,9 +31,8 @@ class SubscriptionTools {
 			@McpToolParam(description = "Exact last payment date yyyy-MM-dd", required = false) String lastPayment,
 			@McpToolParam(description = "Year of the month to check for unpaid subscriptions; use together with unpaidMonth", required = false) Integer unpaidYear,
 			@McpToolParam(description = "Month 1-12 to check for unpaid subscriptions; use together with unpaidYear", required = false) Integer unpaidMonth) {
-		if (unpaidYear != null && unpaidMonth != null) {
-			return client.get("/v1/subscriptions/unpaid", QueryParams.of("year", unpaidYear, "month", unpaidMonth));
-		}
-		return client.get("/v1/subscriptions", QueryParams.of("currencySymbol", currencySymbol, "lastPayment", lastPayment));
+		return unpaidYear != null && unpaidMonth != null
+				? client.getUnpaidSubscriptions(unpaidYear, unpaidMonth)
+				: client.getSubscriptions(currencySymbol, lastPayment);
 	}
 }
